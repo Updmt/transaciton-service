@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  r2dbc:
+    url: r2dbc:pool:postgresql://localhost:5433/fake_payment_provider_db
+    username: admin
+    password: root
+
+  flyway:
+    url: jdbc:postgresql://localhost:5433/fake_payment_provider_db
+    user: admin
+    password: root
+    locations: classpath:db/migration

@@ -1,0 +1,50 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version "$springBootVersion"
+	id 'io.spring.dependency-management' version "$springDependencyManagementVersion"
+}
+
+group = 'com.testpayments'
+version = '1.0.0'
+
+java {
+	sourceCompatibility = '21'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+
+	runtimeOnly "org.postgresql:r2dbc-postgresql:$r2dbcVersion"
+	runtimeOnly "org.postgresql:postgresql:$postgreSqlVersion"
+
+	implementation "org.flywaydb:flyway-core:$flywayDbVersion"
+	implementation "com.google.code.findbugs:jsr305:$googleFindBugsVersion"
+
+	implementation "org.mapstruct:mapstruct:$mapStructVersion"
+
+	implementation "org.projectlombok:lombok:$lombokVersion"
+
+	implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonDatatypeVersion"
+
+	compileOnly('org.projectlombok:lombok')
+	annotationProcessor "org.projectlombok:lombok"
+	annotationProcessor "org.mapstruct:mapstruct-processor:$mapStructVersion"
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

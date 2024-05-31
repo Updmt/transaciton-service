@@ -1,0 +1,17 @@
+version: '3.8'
+
+volumes:
+  pg_app:
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: fake_payment_provider_db
+    volumes:
+      - pg_app:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
