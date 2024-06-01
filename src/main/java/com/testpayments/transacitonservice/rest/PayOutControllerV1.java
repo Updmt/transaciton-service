@@ -43,10 +43,10 @@ public class PayOutControllerV1 {
         return transactionService.getPayOutTransactions(startDate, endDate, merchantId, page, size);
     }
 
-    //todo Вопрос в тг
     @GetMapping("/payout/{payoutId}/details")
-    public Mono<TransactionResponse> getPayOutTransactionById(@PathVariable UUID payoutId) {
-        return transactionService.getPayOutTransactionById(payoutId);
+    public Mono<TransactionResponse> getPayOutTransactionById(ServerWebExchange exchange, @PathVariable UUID payoutId) {
+        UUID merchantId = exchange.getAttribute(ApplicationConstants.MERCHANT_ID_KEY);
+        return transactionService.getPayOutTransactionById(payoutId, merchantId);
     }
 
 }

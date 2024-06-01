@@ -44,7 +44,8 @@ public class TopUpControllerV1 {
     }
 
     @GetMapping("/transaction/{transactionId}/details")
-    public Mono<TransactionResponse> getTopUpTransactionById(@PathVariable UUID transactionId) {
-        return transactionService.getTopUpTransactionById(transactionId);
+    public Mono<TransactionResponse> getTopUpTransactionById(ServerWebExchange exchange, @PathVariable UUID transactionId) {
+        UUID merchantId = exchange.getAttribute(ApplicationConstants.MERCHANT_ID_KEY);
+        return transactionService.getTopUpTransactionById(transactionId, merchantId);
     }
 }

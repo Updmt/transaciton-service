@@ -23,8 +23,6 @@ import com.testpayments.transacitonservice.service.TransactionService;
 import com.testpayments.transacitonservice.util.DateConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -33,7 +31,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -46,8 +43,6 @@ public class TransactionServiceImpl implements TransactionService {
     private final CardService cardService;
 
 
-    //todo теперь Transactional стоит в методе updateCardBalance, чтобы была возможность создавать карту и кастомера без отката транзакции
-    //todo убрана пессимистическая блокировка с метода findCardByCardNumberAndCurrency
     @Override
     public Mono<PaymentResponse> topUp(TopUpRequest topUpRequest, UUID merchantId) {
         return accountService.findAccountByMerchantIdAndCurrency(merchantId, topUpRequest.getCurrency())
@@ -76,7 +71,6 @@ public class TransactionServiceImpl implements TransactionService {
                         .build());
     }
 
-    //todo Если кастомера или карты не существует - я просто бросаю ошибку, не создавая их, как в случае с top up
     @Override
     public Mono<PaymentResponse> payOut(WithdrawalRequest withdrawalRequest, UUID merchantId) {
         CustomerDataDto customerDR = withdrawalRequest.getCustomerDataDto();
@@ -142,17 +136,25 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Mono<TransactionResponse> getTopUpTransactionById(UUID id) {
-        return transactionRepository.findByIdAndType(id, Type.TOP_UP)
+    public Mono<TransactionResponse> getTopUpTransactionById(UUID transactionId, UUID merchantId) {
+        return transactionRepository.findByIdAndType(transactionId, Type.TOP_UP)
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("Transaction was not found")))
-                .flatMap(this::findAndMapByCardIdAndCustomerId);
+                .flatMap(transaction ->
+                        accountService.findAccountByMerchantIdAndCurrency(merchantId, transaction.getCurrency())
+                                .switchIfEmpty(Mono.error(new CustomNotFoundException("Account with this currency and merchantId was not found")))
+                                .flatMap(account -> findAndMapByCardIdAndCustomerId(transaction))
+                );
     }
 
     @Override
-    public Mono<TransactionResponse> getPayOutTransactionById(UUID id) {
-        return transactionRepository.findByIdAndType(id, Type.PAY_OUT)
+    public Mono<TransactionResponse> getPayOutTransactionById(UUID transactionId, UUID merchantId) {
+        return transactionRepository.findByIdAndType(transactionId, Type.PAY_OUT)
                 .switchIfEmpty(Mono.error(new CustomNotFoundException("Transaction was not found")))
-                .flatMap(this::findAndMapByCardIdAndCustomerId);
+                .flatMap(transaction ->
+                        accountService.findAccountByMerchantIdAndCurrency(merchantId, transaction.getCurrency())
+                                .switchIfEmpty(Mono.error(new CustomNotFoundException("Account with this currency and merchantId was not found")))
+                                .flatMap(account -> findAndMapByCardIdAndCustomerId(transaction))
+                );
     }
 
     @Override

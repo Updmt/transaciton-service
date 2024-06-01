@@ -46,7 +46,7 @@ public class WebhookJob {
     private final TransactionalOperator transactionalOperator;
 
 
-    //@Scheduled(fixedRate = 5000, initialDelay = 10000)
+    @Scheduled(fixedRate = 5000, initialDelay = 10000)
     public Mono<Void> assignStatusToTransaction() {
         return transactionService.findAllTransactionsByStatus(Status.IN_PROCESS)
                 .doOnNext(transaction -> log.info("Processing transaction with ID: " + transaction.getId() + " and status: " + transaction.getStatus()))

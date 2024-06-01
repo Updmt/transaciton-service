@@ -18,8 +18,8 @@ public interface TransactionService {
     Mono<Transaction> createTransaction(Transaction transaction);
     Flux<TransactionResponse> getTopUpTransactions(Long startDate, Long endDate, UUID merchantId, int page, int size);
     Flux<TransactionResponse> getPayOutTransactions(Long startDate, Long endDate, UUID merchantId, int page, int size);
-    Mono<TransactionResponse> getTopUpTransactionById(UUID id);
-    Mono<TransactionResponse> getPayOutTransactionById(UUID id);
+    Mono<TransactionResponse> getTopUpTransactionById(UUID transactionId, UUID merchantId);
+    Mono<TransactionResponse> getPayOutTransactionById(UUID transactionId, UUID merchantId);
     Flux<Transaction> findAllTransactionsByStatus(Status status);
     Mono<Transaction> updateTransaction(Transaction transaction);
 }
