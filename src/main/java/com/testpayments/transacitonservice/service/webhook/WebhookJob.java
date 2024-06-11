@@ -31,7 +31,6 @@ import reactor.util.retry.Retry;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -53,7 +52,7 @@ public class WebhookJob {
                 .flatMap(transaction ->
                         transactionalOperator.transactional(
                                         Mono.just(transaction)
-                                                .map(this::assignRandomStatus)
+                                                .map(transactionService::assignRandomStatus)
                                                 .flatMap(transactionService::updateTransaction)
                                                 .flatMap(updatedTransaction ->
                                                         accountService.findAccountByIdForUpdate(transaction.getAccountId())
@@ -64,17 +63,6 @@ public class WebhookJob {
                 )
                 .then();
     }
-
-    private Transaction assignRandomStatus(Transaction transaction) {
-        int randomValue = ThreadLocalRandom.current().nextInt(1, 101);
-        if (randomValue <= 10) {
-            transaction.setStatus(Status.FAILED);
-        } else {
-            transaction.setStatus(Status.APPROVED);
-        }
-        return transaction;
-    }
-
 
     private Mono<?> updateAccountBalance(Transaction transaction, Account account) {
         return cardService.findCardById(transaction.getCardId())

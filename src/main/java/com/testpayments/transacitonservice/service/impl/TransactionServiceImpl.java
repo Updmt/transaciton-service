@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Service
@@ -54,13 +55,13 @@ public class TransactionServiceImpl implements TransactionService {
                                 TopUpCardDataDto cardDR = topUpRequest.getTopUpCardDataDto();
                                 return cardService.findCardByCardNumberAndCurrency(cardDR.getCardNumber(), topUpRequest.getCurrency())
                                         .flatMap(card -> reduceCardBalanceAndCreateTransaction(card, topUpRequest, account.getId()))
-                                        .switchIfEmpty(Mono.defer(() -> createCardAndMap(topUpRequest, customer.getId())
+                                        .switchIfEmpty(Mono.defer(() -> createCardAndMapIfAbsent(topUpRequest, customer.getId())
                                                 .flatMap(card -> Mono.error(new InsufficientFundsException("Not enough money on balance")))));
                             })
                             .switchIfEmpty(Mono.defer(() -> {
                                 Customer newCustomer = mapCustomerRequest(topUpRequest.getCustomerDataDto());
                                 return customerService.createCustomer(newCustomer)
-                                        .flatMap(customer -> createCardAndMap(topUpRequest, customer.getId())
+                                        .flatMap(customer -> createCardAndMapIfAbsent(topUpRequest, customer.getId())
                                                 .flatMap(card -> Mono.error(new InsufficientFundsException("Not enough money on balance"))));
                             }));
                 })
@@ -97,8 +98,6 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    //ищем все аккаунты мерчанта, ищем все транзакции для конкретного мерчанта
-    //сортировки никакой нет
     @Override
     public Flux<TransactionResponse> getTopUpTransactions(Long firstDate, Long lastDate, UUID merchantId, int page, int size) {
         long offset = (long) page * size;
@@ -167,15 +166,33 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    private Mono<Card> createCardAndMap(TopUpRequest topUpRequest, UUID customerId) {
-        Card newCard = mapCardRequest(topUpRequest.getTopUpCardDataDto());
-        newCard.setCurrency(topUpRequest.getCurrency());
-        newCard.setCustomerId(customerId);
-        return cardService.createCard(newCard);
+    //todo не написал тест для этого метода. Из-за ThreadLocalRandom. Перенес его из WebhookJob, чтоб контролировать поведение
+    @Override
+    public Transaction assignRandomStatus(Transaction transaction) {
+        int randomValue = ThreadLocalRandom.current().nextInt(1, 101);
+        if (randomValue <= 10) {
+            transaction.setStatus(Status.FAILED);
+        } else {
+            transaction.setStatus(Status.APPROVED);
+        }
+        return transaction;
+    }
+
+    private Mono<Card> createCardAndMapIfAbsent(TopUpRequest topUpRequest, UUID customerId) {
+        TopUpCardDataDto topUpCardDataDto = topUpRequest.getTopUpCardDataDto();
+        String cardNumber = topUpCardDataDto.getCardNumber();
+        String currency = topUpRequest.getCurrency();
+        return cardService.findCardByCardNumberAndCurrency(cardNumber, currency)
+                .switchIfEmpty(Mono.defer(() ->{
+                    Card newCard = mapCardRequest(topUpCardDataDto);
+                    newCard.setCurrency(currency);
+                    newCard.setCustomerId(customerId);
+                    return cardService.createCard(newCard);
+                }));
     }
 
 
-    public Mono<Transaction> reduceCardBalanceAndCreateTransaction(Card card, TopUpRequest topUpRequest, UUID accountId) {
+    private Mono<Transaction> reduceCardBalanceAndCreateTransaction(Card card, TopUpRequest topUpRequest, UUID accountId) {
         return cardService.updateCardBalance(card, topUpRequest)
                 .flatMap(updatedCard -> createTransactionAfterBalanceUpdate(topUpRequest, card.getId(), accountId));
     }
@@ -186,7 +203,7 @@ public class TransactionServiceImpl implements TransactionService {
         return createTransaction(transaction);
     }
 
-    public Mono<Transaction> reduceAccountBalanceAndCreateTransaction(Account account, WithdrawalRequest withdrawalRequest, UUID cardId) {
+    private Mono<Transaction> reduceAccountBalanceAndCreateTransaction(Account account, WithdrawalRequest withdrawalRequest, UUID cardId) {
         return accountService.updateAccountBalance(account, withdrawalRequest)
                 .flatMap(updatedAccount -> createTransactionAfterBalanceUpdate(withdrawalRequest, cardId, account.getId()));
     }

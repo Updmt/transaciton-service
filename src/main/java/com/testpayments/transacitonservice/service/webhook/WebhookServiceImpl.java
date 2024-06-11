@@ -1,6 +1,5 @@
 package com.testpayments.transacitonservice.service.webhook;
 
-import com.testpayments.transacitonservice.entity.Status;
 import com.testpayments.transacitonservice.entity.Webhook;
 import com.testpayments.transacitonservice.repository.WebhookRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +22,7 @@ public class WebhookServiceImpl implements WebhookService {
         return webhookRepository.save(webhook);
     }
 
+    //todo для этого метода нет юнит тестов
     @Override
     public Mono<String> sendWebhook(Webhook webhook) {
         return webClientBuilder.build()

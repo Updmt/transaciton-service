@@ -22,4 +22,5 @@ public interface TransactionService {
     Mono<TransactionResponse> getPayOutTransactionById(UUID transactionId, UUID merchantId);
     Flux<Transaction> findAllTransactionsByStatus(Status status);
     Mono<Transaction> updateTransaction(Transaction transaction);
+    Transaction assignRandomStatus(Transaction transaction);
 }

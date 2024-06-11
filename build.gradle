@@ -31,18 +31,18 @@ dependencies {
 	implementation "org.flywaydb:flyway-core:$flywayDbVersion"
 	implementation "com.google.code.findbugs:jsr305:$googleFindBugsVersion"
 
-	implementation "org.mapstruct:mapstruct:$mapStructVersion"
-
 	implementation "org.projectlombok:lombok:$lombokVersion"
 
 	implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonDatatypeVersion"
 
 	compileOnly('org.projectlombok:lombok')
 	annotationProcessor "org.projectlombok:lombok"
-	annotationProcessor "org.mapstruct:mapstruct-processor:$mapStructVersion"
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
+
+	testImplementation "org.testcontainers:junit-jupiter:$testContainersVersion"
+	testImplementation "org.testcontainers:postgresql:$testContainersVersion"
 }
 
 tasks.named('test') {
